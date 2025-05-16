@@ -1,13 +1,12 @@
 import { Keypair, PublicKey } from '@solana/web3.js'
-import { useMemo } from 'react'
 import { ExplorerLink } from '@/components/cluster/cluster-ui'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ellipsify } from '@/lib/utils'
-import { useCounterProgram, useCounterProgramAccount } from './counter-data-access'
+import { useVaultProgram, useVaultProgramAccount } from './vault-data-access'
 
-export function CounterCreate() {
-  const { initialize } = useCounterProgram()
+export function VaultCreate() {
+  const { initialize } = useVaultProgram()
 
   return (
     <Button onClick={() => initialize.mutateAsync(Keypair.generate())} disabled={initialize.isPending}>
@@ -16,8 +15,8 @@ export function CounterCreate() {
   )
 }
 
-export function CounterList() {
-  const { accounts, getProgramAccount } = useCounterProgram()
+export function VaultList() {
+  const { accounts, getProgramAccount } = useVaultProgram()
 
   if (getProgramAccount.isLoading) {
     return <span className="loading loading-spinner loading-lg"></span>
@@ -36,7 +35,7 @@ export function CounterList() {
       ) : accounts.data?.length ? (
         <div className="grid md:grid-cols-2 gap-4">
           {accounts.data?.map((account) => (
-            <CounterCard key={account.publicKey.toString()} account={account.publicKey} />
+            <VaultCard key={account.publicKey.toString()} account={account.publicKey} />
           ))}
         </div>
       ) : (
@@ -49,19 +48,20 @@ export function CounterList() {
   )
 }
 
-function CounterCard({ account }: { account: PublicKey }) {
-  const { accountQuery, incrementMutation, setMutation, decrementMutation, closeMutation } = useCounterProgramAccount({
+function VaultCard({ account }: { account: PublicKey }) {
+  const { accountQuery, depositMutation, withdrawMutation, closeMutation } = useVaultProgramAccount({
     account,
   })
 
-  const count = useMemo(() => accountQuery.data?.count ?? 0, [accountQuery.data?.count])
+  // You may want to display more fields from vaultState
+  // const state = accountQuery.data
 
   return accountQuery.isLoading ? (
     <span className="loading loading-spinner loading-lg"></span>
   ) : (
     <Card>
       <CardHeader>
-        <CardTitle>Counter: {count}</CardTitle>
+        <CardTitle>Vault</CardTitle>
         <CardDescription>
           Account: <ExplorerLink path={`account/${account}`} label={ellipsify(account.toString())} />
         </CardDescription>
@@ -70,30 +70,25 @@ function CounterCard({ account }: { account: PublicKey }) {
         <div className="flex gap-4">
           <Button
             variant="outline"
-            onClick={() => incrementMutation.mutateAsync()}
-            disabled={incrementMutation.isPending}
+            onClick={() => {
+              const value = window.prompt('Deposit amount:', '0')
+              if (!value || isNaN(Number(value))) return
+              return depositMutation.mutateAsync(Number(value))
+            }}
+            disabled={depositMutation.isPending}
           >
-            Increment
+            Deposit
           </Button>
           <Button
             variant="outline"
             onClick={() => {
-              const value = window.prompt('Set value to:', count.toString() ?? '0')
-              if (!value || parseInt(value) === count || isNaN(parseInt(value))) {
-                return
-              }
-              return setMutation.mutateAsync(parseInt(value))
+              const value = window.prompt('Withdraw amount:', '0')
+              if (!value || isNaN(Number(value))) return
+              return withdrawMutation.mutateAsync(Number(value))
             }}
-            disabled={setMutation.isPending}
+            disabled={withdrawMutation.isPending}
           >
-            Set
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => decrementMutation.mutateAsync()}
-            disabled={decrementMutation.isPending}
-          >
-            Decrement
+            Withdraw
           </Button>
           <Button
             variant="destructive"

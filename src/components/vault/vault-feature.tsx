@@ -3,27 +3,27 @@ import { WalletButton } from '@/components/solana/solana-provider'
 import { ExplorerLink } from '@/components/cluster/cluster-ui'
 import { AppHero } from '@/components/app-hero'
 import { ellipsify } from '@/lib/utils'
-import { useCounterProgram } from './counter-data-access'
-import { CounterCreate, CounterList } from './counter-ui'
+import { useVaultProgram } from './vault-data-access'
+import { VaultCreate, VaultList } from './vault-ui'
 
-export default function CounterFeature() {
+export default function VaultFeature() {
   const { publicKey } = useWallet()
-  const { programId } = useCounterProgram()
+  const { programId } = useVaultProgram()
 
   return publicKey ? (
     <div>
       <AppHero
-        title="Counter"
+        title="Vault"
         subtitle={
-          'Create a new account by clicking the "Create" button. The state of a account is stored on-chain and can be manipulated by calling the program\'s methods (increment, decrement, set, and close).'
+          'Create a new vault by clicking the "Create" button. The state of a vault is stored on-chain and can be manipulated by calling the program\'s methods (deposit, withdraw, and close).'
         }
       >
         <p className="mb-6">
           <ExplorerLink path={`account/${programId}`} label={ellipsify(programId.toString())} />
         </p>
-        <CounterCreate />
+        <VaultCreate />
       </AppHero>
-      <CounterList />
+      <VaultList />
     </div>
   ) : (
     <div className="max-w-4xl mx-auto">
