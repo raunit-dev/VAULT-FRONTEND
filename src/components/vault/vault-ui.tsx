@@ -1,26 +1,38 @@
-import { Keypair, PublicKey } from '@solana/web3.js'
+import { PublicKey } from '@solana/web3.js'
 import { ExplorerLink } from '@/components/cluster/cluster-ui'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ellipsify } from '@/lib/utils'
 import { useVaultProgram, useVaultProgramAccount } from './vault-data-access'
+import { useWallet } from '@solana/wallet-adapter-react'
 
+/**
+ * Component to create a new vault
+ */
 export function VaultCreate() {
   const { initialize } = useVaultProgram()
+  const { publicKey } = useWallet()
 
   return (
-    <Button onClick={() => initialize.mutateAsync(Keypair.generate())} disabled={initialize.isPending}>
-      Create {initialize.isPending && '...'}
+    <Button 
+      onClick={() => initialize.mutateAsync()} 
+      disabled={initialize.isPending || !publicKey}
+    >
+      Create Vault {initialize.isPending && '...'}
     </Button>
   )
 }
 
+/**
+ * Component to display a list of vaults
+ */
 export function VaultList() {
   const { accounts, getProgramAccount } = useVaultProgram()
 
   if (getProgramAccount.isLoading) {
     return <span className="loading loading-spinner loading-lg"></span>
   }
+
   if (!getProgramAccount.data?.value) {
     return (
       <div className="alert alert-info flex justify-center">
@@ -28,8 +40,9 @@ export function VaultList() {
       </div>
     )
   }
+
   return (
-    <div className={'space-y-6'}>
+    <div className="space-y-6">
       {accounts.isLoading ? (
         <span className="loading loading-spinner loading-lg"></span>
       ) : accounts.data?.length ? (
@@ -40,21 +53,23 @@ export function VaultList() {
         </div>
       ) : (
         <div className="text-center">
-          <h2 className={'text-2xl'}>No accounts</h2>
-          No accounts found. Create one above to get started.
+          <h2 className="text-2xl">No vaults</h2>
+          <p>No vaults found. Create one above to get started.</p>
         </div>
       )}
     </div>
   )
 }
 
+/**
+ * Component to display and interact with a single vault
+ */
 function VaultCard({ account }: { account: PublicKey }) {
   const { accountQuery, depositMutation, withdrawMutation, closeMutation } = useVaultProgramAccount({
     account,
   })
 
-  // You may want to display more fields from vaultState
-  // const state = accountQuery.data
+  // You can display more fields from accountQuery.data if needed
 
   return accountQuery.isLoading ? (
     <span className="loading loading-spinner loading-lg"></span>
@@ -71,7 +86,7 @@ function VaultCard({ account }: { account: PublicKey }) {
           <Button
             variant="outline"
             onClick={() => {
-              const value = window.prompt('Deposit amount:', '0')
+              const value = window.prompt('Deposit amount (in lamports):', '1000000')
               if (!value || isNaN(Number(value))) return
               return depositMutation.mutateAsync(Number(value))
             }}
@@ -82,7 +97,7 @@ function VaultCard({ account }: { account: PublicKey }) {
           <Button
             variant="outline"
             onClick={() => {
-              const value = window.prompt('Withdraw amount:', '0')
+              const value = window.prompt('Withdraw amount (in lamports):', '0')
               if (!value || isNaN(Number(value))) return
               return withdrawMutation.mutateAsync(Number(value))
             }}
@@ -93,7 +108,7 @@ function VaultCard({ account }: { account: PublicKey }) {
           <Button
             variant="destructive"
             onClick={() => {
-              if (!window.confirm('Are you sure you want to close this account?')) {
+              if (!window.confirm('Are you sure you want to close this vault?')) {
                 return
               }
               return closeMutation.mutateAsync()
